@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #-------------------------------------------------------------------------------
-# qwiic_template_ex1_title.py TODO: replace template and title
+# qwiic_mmc5983ma_ex1_basic_readings.py
 #
 # TODO: Add description for this example
 #-------------------------------------------------------------------------------
@@ -33,26 +33,44 @@
 # SOFTWARE.
 #===============================================================================
 
-import qwiic_template # TODO Import correct package
+import qwiic_mmc5983ma
 import sys
+import time
 
 def runExample():
 	# TODO Replace template and title
-	print("\nQwiic Template Example 1 - Title\n")
+	print("\nQwiic MMC5983MA Example 1 - Basic Readings\n")
 
 	# Create instance of device
-	myDevice = qwiic_template.QwiicTemplate() # TODO update as needed
+	my_mag = qwiic_mmc5983ma.QwiicMMC5983MA()
 
 	# Check if it's connected
-	if myDevice.is_connected() == False:
+	if my_mag.is_connected() == False:
 		print("The device isn't connected to the system. Please check your connection", \
 			file=sys.stderr)
 		return
 
 	# Initialize the device
-	myDevice.begin()
+	my_mag.begin()
 
-	# TODO Add basic example code
+	# Loop forever
+	while True:
+		# Read each axis one by one, or all together
+		# x = my_mag.get_measurement_x_gauss()
+		# y = my_mag.get_measurement_y_gauss()
+		# z = my_mag.get_measurement_z_gauss()
+		x, y, z = my_mag.get_measurement_xyz_gauss()
+
+		# Print them out
+		print("X: %f" % x)
+		print("Y: %f" % y)
+		print("Z: %f" % z)
+
+		# Extra space to keep numbers separate
+		print()
+
+		# Delay for a second
+		time.sleep(1)
 
 if __name__ == '__main__':
 	try:
