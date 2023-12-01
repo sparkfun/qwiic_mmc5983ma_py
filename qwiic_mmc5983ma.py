@@ -125,6 +125,7 @@ class QwiicMMC5983MA(object):
     XYZ_0_SHIFT = 10
     XYZ_1_SHIFT = 2
 
+    # Local copy of control registers
     class MemoryShadow:
         def __init__(self):
             self.internal_control_0 = 0x0
@@ -200,13 +201,44 @@ class QwiicMMC5983MA(object):
         return True
 
     def is_bit_set(self, register_address, bit_mask):
-        return self._i2c.readByte(self.address, register_address) & bit_mask
+        """
+        Checks if a bit is set in a register
+
+        :param register_address: Register address
+        :type register_address: int
+        :param bit_mask: Bit mask
+        :type bit_mask: int
+        :return: `True` if bit is set, otherwise `False`
+        :rtype: bool
+        """
+        return bool(self._i2c.readByte(self.address, register_address) & bit_mask)
 
     def set_register_bit(self, register_address, bit_mask):
+        """
+        Sets a bit in a register
+
+        :param register_address: Register address
+        :type register_address: int
+        :param bit_mask: Bit mask
+        :type bit_mask: int
+        """
         reg_value = self._i2c.readByte(self.address, register_address)
         self._i2c.writeByte(self.address, register_address, reg_value | bit_mask)
 
     def set_shadow_bit(self, register_address, bit_mask, do_write = True):
+        """
+        Sets a bit in the shadow register and optionally writes the value to the
+        device
+
+        :param register_address: Register address
+        :type register_address: int
+        :param bit_mask: Bit mask
+        :type bit_mask: int
+        :param do_write: Whether to write the value to the device, defaults to True
+        :type do_write: bool, optional
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         shadow_register = None
 
         # Which register are we referring to?
@@ -228,6 +260,19 @@ class QwiicMMC5983MA(object):
         return False
 
     def clear_shadow_bit(self, register_address, bit_mask, do_write = True):
+        """
+        Clears a bit in the shadow register and optionally writes the value to
+        the device
+
+        :param register_address: Register address
+        :type register_address: int
+        :param bit_mask: Bit mask
+        :type bit_mask: int
+        :param do_write: Whether to write the value to the device, defaults to True
+        :type do_write: bool, optional
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         shadow_register = None
 
         # Which register are we referring to?
@@ -249,19 +294,35 @@ class QwiicMMC5983MA(object):
         return False
 
     def is_shadow_bit_set(self, register_address, bit_mask):
+        """
+        Checks if a bit is set in the shadow register
+
+        :param register_address: Register address
+        :type register_address: int
+        :param bit_mask: Bit mask
+        :type bit_mask: int
+        :return: `True` if bit is set, otherwise `False`
+        :rtype: bool
+        """
         # Which register are we referring to?
         if register_address == self.INT_CTRL_0_REG:
-            return self.memory_shadow.internal_control_0 & bit_mask
+            return bool(self.memory_shadow.internal_control_0 & bit_mask)
         elif register_address == self.INT_CTRL_1_REG:
-            return self.memory_shadow.internal_control_1 & bit_mask
+            return bool(self.memory_shadow.internal_control_1 & bit_mask)
         elif register_address == self.INT_CTRL_2_REG:
-            return self.memory_shadow.internal_control_2 & bit_mask
+            return bool(self.memory_shadow.internal_control_2 & bit_mask)
         elif register_address == self.INT_CTRL_3_REG:
-            return self.memory_shadow.internal_control_3 & bit_mask
+            return bool(self.memory_shadow.internal_control_3 & bit_mask)
 
         return False
 
     def get_temperature(self):
+        """
+        Gets the temperature in degrees Celsius
+
+        :return: Temperature in degrees Celsius
+        :rtype: float
+        """
         # Set the TM_T bit to start the temperature conversion.
         # Do this using the shadow register. If we do it with set_register_bit
         # (read-modify-write) we end up setting the Auto_SR_en bit too as that
@@ -289,9 +350,15 @@ class QwiicMMC5983MA(object):
         temperature = -75.0 + (float(result) * (200.0 / 255.0))
 
         # Return the integer part of the temperature.
-        return int(temperature)
+        return temperature
 
     def soft_reset(self):
+        """
+        Performs a software reset
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the SW_RST bit to perform a software reset.
         # Do this using the shadow register. If we do it with set_register_bit
         # (read-modify-write) we end up setting the reserved and BW_0 bits too as they
@@ -306,30 +373,75 @@ class QwiicMMC5983MA(object):
         return success
 
     def enable_interrupt(self):
+        """
+        Enables interrupts
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the INT_MEAS_DONE_EN bit through the shadow memory
         return self.set_shadow_bit(self.INT_CTRL_0_REG, self.INT_MEAS_DONE_EN)
 
     def disable_interrupt(self):
+        """
+        Disables interrupts
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Clear the INT_MEAS_DONE_EN bit through the shadow memory
         return self.clear_shadow_bit(self.INT_CTRL_0_REG, self.INT_MEAS_DONE_EN)
 
     def is_interrupt_enabled(self):
+        """
+        Checks if interrupts are enabled
+
+        :return: `True` if interrupts are enabled, otherwise `False`
+        :rtype: bool
+        """
         # Get the value of the INT_MEAS_DONE_EN bit from the shadow memory
         return self.is_shadow_bit_set(self.INT_CTRL_0_REG, self.INT_MEAS_DONE_EN)
 
     def enable_3_wire_spi(self):
+        """
+        Enables 3-wire SPI
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the SPI_3W bit through the shadow memory
         return self.set_shadow_bit(self.INT_CTRL_3_REG, self.SPI_3W)
 
     def disable_3_wire_spi(self):
+        """
+        Disables 3-wire SPI
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Clear the SPI_3W bit through the shadow memory
         return self.clear_shadow_bit(self.INT_CTRL_3_REG, self.SPI_3W)
 
     def is_3_wire_spi_enabled(self):
+        """
+        Checks if 3-wire SPI is enabled
+
+        :return: `True` if 3-wire SPI is enabled, otherwise `False`
+        :rtype: bool
+        """
         # Get the value of the SPI_3W bit from the shadow memory
         return self.is_shadow_bit_set(self.INT_CTRL_3_REG, self.SPI_3W)
 
     def perform_set_operation(self):
+        """
+        Performs a SET operation. This sets the internal magnetization using
+        coils built into the MMC5983MA, which can be used to degauss the sensor
+        after it has been exposed to a strong magnetic field, or to compute the
+        offset of each axis in conjuction with the RESET operation.
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the SET_OPERATION bit in the shadow memory
         success = self.set_shadow_bit(self.INT_CTRL_0_REG, self.SET_OPERATION)
 
@@ -342,6 +454,15 @@ class QwiicMMC5983MA(object):
         return success
 
     def perform_reset_operation(self):
+        """
+        Performs a RESET operation. This resets the internal magnetization using
+        coils built into the MMC5983MA, which can be used to degauss the sensor
+        after it has been exposed to a strong magnetic field, or to compute the
+        offset of each axis in conjuction with the SET operation.
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the RESET_OPERATION bit in the shadow memory
         success = self.set_shadow_bit(self.INT_CTRL_0_REG, self.RESET_OPERATION)
 
@@ -354,42 +475,105 @@ class QwiicMMC5983MA(object):
         return success
 
     def enable_automatic_set_reset(self):
+        """
+        Enables automatic SET/RESET operations, which needs to be done in
+        conjuction with enable_periodic_set() and set_periodic_set_samples()
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the AUTO_SR_EN bit through the shadow memory
         return self.set_shadow_bit(self.INT_CTRL_0_REG, self.AUTO_SR_EN)
 
     def disable_automatic_set_reset(self):
+        """
+        Disables automatic SET/RESET operations
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Clear the AUTO_SR_EN bit through the shadow memory
         return self.clear_shadow_bit(self.INT_CTRL_0_REG, self.AUTO_SR_EN)
 
     def is_automatic_set_reset_enabled(self):
+        """
+        Checks if automatic SET/RESET operations are enabled
+
+        :return: `True` if enabled, otherwise `False`
+        :rtype: bool
+        """
         # Get the value of the AUTO_SR_EN bit from the shadow memory
         return self.is_shadow_bit_set(self.INT_CTRL_0_REG, self.AUTO_SR_EN)
 
     def enable_x_channel(self):
+        """
+        Enables the X channel
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Clear the X_INHIBIT bit through the shadow memory
         return self.clear_shadow_bit(self.INT_CTRL_1_REG, self.X_INHIBIT)
 
     def disable_x_channel(self):
+        """
+        Disables the X channel
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the X_INHIBIT bit through the shadow memory
         return self.set_shadow_bit(self.INT_CTRL_1_REG, self.X_INHIBIT)
 
     def is_x_channel_enabled(self):
+        """
+        Checks if the X channel is enabled
+
+        :return: `True` if enabled, otherwise `False`
+        :rtype: bool
+        """
         # Get the value of the X_INHIBIT bit from the shadow memory
         return self.is_shadow_bit_set(self.INT_CTRL_1_REG, self.X_INHIBIT)
 
     def enable_yz_channels(self):
+        """
+        Enables the Y and Z channels
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Clear the YZ_INHIBIT bit through the shadow memory
         return self.clear_shadow_bit(self.INT_CTRL_1_REG, self.YZ_INHIBIT)
 
     def disable_yz_channels(self):
+        """
+        Disables the Y and Z channels
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the YZ_INHIBIT bit through the shadow memory
         return self.set_shadow_bit(self.INT_CTRL_1_REG, self.YZ_INHIBIT)
 
     def are_yz_channels_enabled(self):
+        """
+        Checks if the Y and Z channels are enabled
+
+        :return: `True` if enabled, otherwise `False`
+        :rtype: bool
+        """
         # Get the value of the YZ_INHIBIT bit from the shadow memory
         return self.is_shadow_bit_set(self.INT_CTRL_1_REG, self.YZ_INHIBIT)
 
     def set_filter_bandwidth(self, bandwidth):
+        """
+        Sets the filter bandwidth
+
+        :param bandwidth: Bandwidth in Hz, can be 100, 200, 400, or 800
+        :type bandwidth: int
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set/clear the BW0 and BW1 bits in the shadow memory based on the specified bandwidth
         success = False
 
@@ -409,6 +593,12 @@ class QwiicMMC5983MA(object):
         return success
 
     def get_filter_bandwidth(self):
+        """
+        Gets the filter bandwidth
+
+        :return: Bandwidth in Hz
+        :rtype: int
+        """
         # Get the values of the BW0 and BW1 bits from the shadow memory
         bw0 = self.is_shadow_bit_set(self.INT_CTRL_1_REG, self.BW0)
         bw1 = self.is_shadow_bit_set(self.INT_CTRL_1_REG, self.BW1)
@@ -424,18 +614,45 @@ class QwiicMMC5983MA(object):
             return 100
 
     def enable_continuous_mode(self):
+        """
+        Enables continuous mode
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set the CMM_EN bit through the shadow memory
         return self.set_shadow_bit(self.INT_CTRL_2_REG, self.CMM_EN)
 
     def disable_continuous_mode(self):
+        """
+        Disables continuous mode
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Clear the CMM_EN bit through the shadow memory
         return self.clear_shadow_bit(self.INT_CTRL_2_REG, self.CMM_EN)
 
     def is_continuous_mode_enabled(self):
+        """
+        Checks if continuous mode is enabled
+
+        :return: `True` if enabled, otherwise `False`
+        :rtype: bool
+        """
         # Get the value of the CMM_EN bit from the shadow memory
         return self.is_shadow_bit_set(self.INT_CTRL_2_REG, self.CMM_EN)
 
     def set_continuous_mode_frequency(self, frequency):
+        """
+        Sets the continuous mode frequency
+
+        :param frequency: Frequency in Hz, can be 1, 10, 20, 50, 100, 200, or
+        1000. Pass 0 to disable continuous mode.
+        :type frequency: int
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # Set/clear the CM_FREQ_0, CM_FREQ_1, and CM_FREQ_2 bits in the shadow memory based on the specified frequency
         success = False
 
@@ -475,6 +692,12 @@ class QwiicMMC5983MA(object):
         return success
 
     def get_continuous_mode_frequency(self):
+        """
+        Gets the continuous mode frequency
+
+        :return: Frequency in Hz
+        :rtype: int
+        """
         # Get the values of the CM_FREQ_0, CM_FREQ_1, and CM_FREQ_2 bits from the shadow memory
         cm_freq_0 = self.is_shadow_bit_set(self.INT_CTRL_2_REG, self.CM_FREQ_0)
         cm_freq_1 = self.is_shadow_bit_set(self.INT_CTRL_2_REG, self.CM_FREQ_1)
@@ -499,21 +722,50 @@ class QwiicMMC5983MA(object):
             return 0
 
     def enable_periodic_set(self):
+        """
+        Enables periodic SET operations, which needs to be done in conjuction
+        with enable_automatic_set_reset() and set_periodic_set_samples()
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # This bit must be set through the shadow memory or we won't be
         # able to check if periodic set is enabled using isContinuousModeEnabled()
         return self.set_shadow_bit(self.INT_CTRL_2_REG, self.EN_PRD_SET)
 
     def disable_periodic_set(self):
+        """
+        Disables periodic SET operations
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # This bit must be cleared through the shadow memory or we won't be
         # able to check if periodic set is enabled using isContinuousModeEnabled()
         return self.clear_shadow_bit(self.INT_CTRL_2_REG, self.EN_PRD_SET)
 
     def is_periodic_set_enabled(self):
+        """
+        Checks if periodic SET operations are enabled
+
+        :return: `True` if enabled, otherwise `False`
+        :rtype: bool
+        """
         # Get the bit value from the shadow register since the IC does not
         # allow reading INT_CTRL_2_REG register.
         return self.is_shadow_bit_set(self.INT_CTRL_2_REG, self.EN_PRD_SET)
 
     def set_periodic_set_samples(self, number_of_samples):
+        """
+        Sets the number of samples between each SET operation when periodic SET
+        operations are enabled
+
+        :param number_of_samples: Number of samples, can be 1, 25, 75, 100, 250,
+        500, 1000, or 2000
+        :type number_of_samples: int
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         success = False
         
         if number_of_samples == 25:
@@ -562,6 +814,13 @@ class QwiicMMC5983MA(object):
         return success
 
     def get_periodic_set_samples(self):
+        """
+        Gets the number of samples between each SET operation when periodic SET
+        operations are enabled
+
+        :return: Number of samples between each SET operation
+        :rtype: int
+        """
         # Since we cannot read INT_CTRL_2_REG we evaluate the shadow
         # memory contents and return the corresponding period.
 
@@ -587,36 +846,82 @@ class QwiicMMC5983MA(object):
         return period
 
     def apply_extra_current_pos_to_neg(self):
+        """
+        Applies extra current "forward" through the coils to change the magnetic
+        field strength. This can be used to check if the sensor has been
+        saturated.
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # This bit must be set through the shadow memory or we won't be
         # able to check if extra current is applied using is_extra_current_applied_pos_to_neg()
         return self.set_shadow_bit(self.INT_CTRL_3_REG, self.ST_ENP)
 
     def remove_extra_current_pos_to_neg(self):
+        """
+        Removes extra current "forward" through the coils
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # This bit must be cleared through the shadow memory or we won't be
         # able to check if extra current is applied using is_extra_current_applied_pos_to_neg()
         return self.clear_shadow_bit(self.INT_CTRL_3_REG, self.ST_ENP)
 
     def is_extra_current_applied_pos_to_neg(self):
+        """
+        Checks if extra current is applied "forward" through the coils
+
+        :return: `True` if extra current is applied, otherwise `False`
+        :rtype: bool
+        """
         # Get the bit value from the shadow register since the IC does not
         # allow reading INT_CTRL_3_REG register.
         return self.is_shadow_bit_set(self.INT_CTRL_3_REG, self.ST_ENP)
 
     def apply_extra_current_neg_to_pos(self):
+        """
+        Applies extra current "reverse" through the coils to change the magnetic
+        field strength. This can be used to check if the sensor has been
+        saturated.
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # This bit must be set through the shadow memory or we won't be
         # able to check if extra current is applied using is_extra_current_applied_neg_to_pos()
         return self.set_shadow_bit(self.INT_CTRL_3_REG, self.ST_ENM)
 
     def remove_extra_current_neg_to_pos(self):
+        """
+        Removes extra current "reverse" through the coils
+
+        :return: `True` if successful, otherwise `False`
+        :rtype: bool
+        """
         # This bit must be cleared through the shadow memory or we won't be
         # able to check if extra current is applied using is_extra_current_applied_neg_to_pos()
         return self.clear_shadow_bit(self.INT_CTRL_3_REG, self.ST_ENM)
 
     def is_extra_current_applied_neg_to_pos(self):
+        """
+        Checks if extra current is applied "reverse" through the coils
+
+        :return: `True` if extra current is applied, otherwise `False`
+        :rtype: bool
+        """
         # Get the bit value from the shadow register since the IC does not
         # allow reading INT_CTRL_3_REG register.
         return self.is_shadow_bit_set(self.INT_CTRL_3_REG, self.ST_ENM)
 
     def clear_meas_done_interrupt(self, meas_mask = MEAS_T_DONE | MEAS_M_DONE):
+        """
+        Clears the measurement done interrupt
+
+        :param meas_mask: Measurement mask, defaults to MEAS_T_DONE | MEAS_M_DONE
+        :type meas_mask: int, optional
+        """
         # Ensure only the Meas_T_Done and Meas_M_Done interrupts can be cleared
         meas_mask &= (self.MEAS_T_DONE | self.MEAS_M_DONE)
 
@@ -625,6 +930,12 @@ class QwiicMMC5983MA(object):
         self.set_register_bit(self.STATUS_REG, meas_mask)
 
     def get_measurement_x(self):
+        """
+        Gets the raw x-axis measurement
+
+        :return: Raw x-axis measurement, 18-bit unsigned integer
+        :rtype: int
+        """
         # Set the TM_M bit to start the measurement.
         # Do this using the shadow register. If we do it with set_register_bit
         # (read-modify-write) we end up setting the Auto_SR_en bit too as that
@@ -663,6 +974,12 @@ class QwiicMMC5983MA(object):
         return result
 
     def get_measurement_y(self):
+        """
+        Gets the raw y-axis measurement
+
+        :return: Raw y-axis measurement, 18-bit unsigned integer
+        :rtype: int
+        """
         # Set the TM_M bit to start the measurement.
         # Do this using the shadow register. If we do it with set_register_bit
         # (read-modify-write) we end up setting the Auto_SR_en bit too as that
@@ -701,6 +1018,12 @@ class QwiicMMC5983MA(object):
         return result
 
     def get_measurement_z(self):
+        """
+        Gets the raw z-axis measurement
+
+        :return: Raw z-axis measurement, 18-bit unsigned integer
+        :rtype: int
+        """
         # Set the TM_M bit to start the measurement.
         # Do this using the shadow register. If we do it with set_register_bit
         # (read-modify-write) we end up setting the Auto_SR_en bit too as that
@@ -737,6 +1060,12 @@ class QwiicMMC5983MA(object):
         return result
 
     def get_measurement_xyz(self):
+        """
+        Gets the raw x, y, and z-axis measurements
+
+        :return: Raw x, y, and z-axis measurements, 18-bit unsigned integers
+        :rtype: tuple(int, int, int)
+        """
         # Set the TM_M bit to start the measurement.
         # Do this using the shadow register. If we do it with set_register_bit
         # (read-modify-write) we end up setting the Auto_SR_en bit too as that
@@ -770,6 +1099,13 @@ class QwiicMMC5983MA(object):
         return self.read_fields_xyz()
 
     def read_fields_xyz(self):
+        """
+        Internal function to get the raw x, y, and z-axis measurements, should
+        not be called directly
+
+        :return: Raw x, y, and z-axis measurements, 18-bit unsigned integers
+        :rtype: tuple(int, int, int)
+        """
         register_values = [0] * 7
 
         register_values = self._i2c.readBlock(self.address, self.X_OUT_0_REG, 7)
@@ -787,6 +1123,10 @@ class QwiicMMC5983MA(object):
         return (x, y, z)
 
     def calibrate_offsets(self):
+        """
+        Calibrates the offsets for all axes. This will also degauss the sensor
+        if it was previously exposed to a strong magnetic field.
+        """
         # Following the datasheet's instructions, page 18
         
         # Perform a set operation, then measure all axes
@@ -803,9 +1143,27 @@ class QwiicMMC5983MA(object):
         self.z_offset = (z1 + z2) / 2
 
     def get_offsets(self):
+        """
+        Gets the raw offsets for all axes
+
+        :return: Raw offsets for all axes
+        :rtype: tuple(int, int, int)
+        """
         return self.x_offset, self.y_offset, self.z_offset
 
     def get_measurement_x_gauss(self, offset = None, gain = 8):
+        """
+        Gets the x-axis measurement in gauss
+        
+        :param offset: Offset to apply to the measurement, defaults to None,
+        which will instead use stored offset
+        :type offset: int, optional
+        :param gain: Gain to apply to the measurement, defaults to 8 (full scale
+        range of the MMC5983MA)
+        :type gain: float, optional
+        :return: x-axis measurement in gauss
+        :rtype: float
+        """
         # Check if an offset was provided
         if(offset == None):
             # No offset, use the stored offset
@@ -820,6 +1178,18 @@ class QwiicMMC5983MA(object):
         return measurement_gauss
     
     def get_measurement_y_gauss(self, offset = None, gain = 8):
+        """
+        Gets the y-axis measurement in gauss
+
+        :param offset: Offset to apply to the measurement, defaults to None,
+        which will instead use stored offset
+        :type offset: int, optional
+        :param gain: Gain to apply to the measurement, defaults to 8 (full scale
+        range of the MMC5983MA)
+        :type gain: float, optional
+        :return: y-axis measurement in gauss
+        :rtype: float
+        """
         # Check if an offset was provided
         if(offset == None):
             # No offset, use the stored offset
@@ -834,6 +1204,18 @@ class QwiicMMC5983MA(object):
         return measurement_gauss
     
     def get_measurement_z_gauss(self, offset = None, gain = 8):
+        """
+        Gets the z-axis measurement in gauss
+
+        :param offset: Offset to apply to the measurement, defaults to None,
+        which will instead use stored offset
+        :type offset: int, optional
+        :param gain: Gain to apply to the measurement, defaults to 8 (full scale
+        range of the MMC5983MA)
+        :type gain: float, optional
+        :return: z-axis measurement in gauss
+        :rtype: float
+        """
         # Check if an offset was provided
         if(offset == None):
             # No offset, use the stored offset
@@ -848,6 +1230,18 @@ class QwiicMMC5983MA(object):
         return measurement_gauss
 
     def get_measurement_xyz_gauss(self, offsets = None, gains = [8] * 3):
+        """
+        Gets the x, y, and z-axis measurements in gauss
+
+        :param offsets: Offsets to apply to the measurements, defaults to None,
+        which will instead use stored offsets
+        :type offsets: tuple(int, int, int), optional
+        :param gains: Gains to apply to the measurements, defaults to 8 (full
+        scale range of the MMC5983MA)
+        :type gains: list(float), optional
+        :return: x, y, and z-axis measurements in gauss
+        :rtype: tuple(float, float, float)
+        """
         # Check if offsets were provided
         if(offsets == None):
             # No offsets, use the stored offsets
