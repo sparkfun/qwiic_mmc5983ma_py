@@ -156,8 +156,16 @@ class QwiicMMC5983MA(object):
         else:
             self._i2c = i2c_driver
 
+        # Initialize offsets as 2^17 (half of full scale range)
+        self.x_offset = 2**17
+        self.y_offset = 2**17
+        self.z_offset = 2**17
+
         # Initialize shadow registers
         self.memory_shadow = self.MemoryShadow()
+
+        # Calibrate offsets
+        self.calibrate_offsets()
 
     def is_connected(self):
         """
@@ -778,65 +786,82 @@ class QwiicMMC5983MA(object):
 
         return (x, y, z)
 
-    def get_measurement_x_gauss(self, offset = (2 ** 17), gain = 8):
-        # The magnetic field values are 18-bit unsigned. The _approximate_ zero
-        # (mid) point is 2^17 (131072). Here we scale each field to +/- 1.0,
-        # then multiply by the gain (default 8) to get measurement in Gauss.
-        #
-        # Please note: to properly correct and calibrate the X, Y and Z channels, you need to determine true
-        # offsets (zero points) and scale factors (gains) for all three channels. Futher details can be found at:
-        # https://thecavepearlproject.org/2015/05/22/calibrating-any-compass-or-accelerometer-for-arduino/
+    def calibrate_offsets(self):
+        # Following the datasheet's instructions, page 18
+        
+        # Perform a set operation, then measure all axes
+        self.perform_set_operation()
+        x1, y1, z1 = self.get_measurement_xyz()
+        
+        # Then perform a rest operation and measure all axes again
+        self.perform_reset_operation()
+        x2, y2, z2 = self.get_measurement_xyz()
+        
+        # Sum these values and divide by 2 to get new offsets
+        self.x_offset = (x1 + x2) / 2
+        self.y_offset = (y1 + y2) / 2
+        self.z_offset = (z1 + z2) / 2
+
+    def get_measurement_x_gauss(self, offset = None, gain = 8):
+        # Check if an offset was provided
+        if(offset == None):
+            # No offset, use the stored offset
+            offset = self.x_offset
+        
+        # Get the raw measurement, apply the offset, then scale it to get gauss
+        # Raw value is 18 bit, so divide by 2^17 = 131072 (half of full range)
         measurement_raw = self.get_measurement_x()
-        mesaurement_scaled = (measurement_raw - offset) / offset
-        measurement_gauss = mesaurement_scaled * gain
+        mesaurement_zeroed = measurement_raw - offset
+        measurement_gauss = mesaurement_zeroed * gain / 131072
 
         return measurement_gauss
     
-    def get_measurement_y_gauss(self, offset = (2 ** 17), gain = 8):
-        # The magnetic field values are 18-bit unsigned. The _approximate_ zero
-        # (mid) point is 2^17 (131072). Here we scale each field to +/- 1.0,
-        # then multiply by the gain (default 8) to get measurement in Gauss.
-        #
-        # Please note: to properly correct and calibrate the X, Y and Z channels, you need to determine true
-        # offsets (zero points) and scale factors (gains) for all three channels. Futher details can be found at:
-        # https://thecavepearlproject.org/2015/05/22/calibrating-any-compass-or-accelerometer-for-arduino/
+    def get_measurement_y_gauss(self, offset = None, gain = 8):
+        # Check if an offset was provided
+        if(offset == None):
+            # No offset, use the stored offset
+            offset = self.y_offset
+        
+        # Get the raw measurement, apply the offset, then scale it to get gauss
+        # Raw value is 18 bit, so divide by 2^17 = 131072 (half of full range)
         measurement_raw = self.get_measurement_y()
-        mesaurement_scaled = (measurement_raw - offset) / offset
-        measurement_gauss = mesaurement_scaled * gain
+        mesaurement_zeroed = measurement_raw - offset
+        measurement_gauss = mesaurement_zeroed * gain / 131072
 
         return measurement_gauss
     
-    def get_measurement_z_gauss(self, offset = (2 ** 17), gain = 8):
-        # The magnetic field values are 18-bit unsigned. The _approximate_ zero
-        # (mid) point is 2^17 (131072). Here we scale each field to +/- 1.0,
-        # then multiply by the gain (default 8) to get measurement in Gauss.
-        #
-        # Please note: to properly correct and calibrate the X, Y and Z channels, you need to determine true
-        # offsets (zero points) and scale factors (gains) for all three channels. Futher details can be found at:
-        # https://thecavepearlproject.org/2015/05/22/calibrating-any-compass-or-accelerometer-for-arduino/
+    def get_measurement_z_gauss(self, offset = None, gain = 8):
+        # Check if an offset was provided
+        if(offset == None):
+            # No offset, use the stored offset
+            offset = self.z_offset
+        
+        # Get the raw measurement, apply the offset, then scale it to get gauss
+        # Raw value is 18 bit, so divide by 2^17 = 131072 (half of full range)
         measurement_raw = self.get_measurement_z()
-        mesaurement_scaled = (measurement_raw - offset) / offset
-        measurement_gauss = mesaurement_scaled * gain
+        mesaurement_zeroed = measurement_raw - offset
+        measurement_gauss = mesaurement_zeroed * gain / 131072
 
         return measurement_gauss
 
-    def get_measurement_xyz_gauss(self, offsets = [2 ** 17] * 3, gains = [8] * 3):
-        # The magnetic field values are 18-bit unsigned. The _approximate_ zero
-        # (mid) point is 2^17 (131072). Here we scale each field to +/- 1.0,
-        # then multiply by the gain (default 8) to get measurement in Gauss.
-        #
-        # Please note: to properly correct and calibrate the X, Y and Z channels, you need to determine true
-        # offsets (zero points) and scale factors (gains) for all three channels. Futher details can be found at:
-        # https://thecavepearlproject.org/2015/05/22/calibrating-any-compass-or-accelerometer-for-arduino/
+    def get_measurement_xyz_gauss(self, offsets = None, gains = [8] * 3):
+        # Check if offsets were provided
+        if(offsets == None):
+            # No offsets, use the stored offsets
+            offsets = [self.x_offset, self.y_offset, self.z_offset]
+        
+        # Get the raw measurements
         x_raw, y_raw, z_raw = self.get_measurement_xyz()
 
-        x_scaled = (x_raw - offsets[0]) / offsets[0]
-        x_gauss = x_scaled * gains[0]
+        # Apply the offsets
+        x_zeroed = x_raw - offsets[0]
+        y_zeroed = y_raw - offsets[1]
+        z_zeroed = z_raw - offsets[2]
 
-        y_scaled = (y_raw - offsets[1]) / offsets[1]
-        y_gauss = y_scaled * gains[1]
-
-        z_scaled = (z_raw - offsets[2]) / offsets[2]
-        z_gauss = z_scaled * gains[2]
+        # Scale to get gauss
+        # Raw value is 18 bit, so divide by 2^17 = 131072 (half of full range)
+        x_gauss = x_zeroed * gains[0] / 131072
+        y_gauss = y_zeroed * gains[1] / 131072
+        z_gauss = z_zeroed * gains[2] / 131072
 
         return x_gauss, y_gauss, z_gauss
