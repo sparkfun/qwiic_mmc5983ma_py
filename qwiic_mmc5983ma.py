@@ -802,6 +802,9 @@ class QwiicMMC5983MA(object):
         self.y_offset = (y1 + y2) / 2
         self.z_offset = (z1 + z2) / 2
 
+    def get_offsets(self):
+        return self.x_offset, self.y_offset, self.z_offset
+
     def get_measurement_x_gauss(self, offset = None, gain = 8):
         # Check if an offset was provided
         if(offset == None):
