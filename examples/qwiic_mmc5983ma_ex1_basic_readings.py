@@ -2,9 +2,9 @@
 #-------------------------------------------------------------------------------
 # qwiic_mmc5983ma_ex1_basic_readings.py
 #
-# TODO: Add description for this example
+# Demonstrates how to get basic data from the MMC5983MA Magnetometer
 #-------------------------------------------------------------------------------
-# Written by SparkFun Electronics, TODO: month and year
+# Written by SparkFun Electronics, December 2023
 #
 # This python library supports the SparkFun Electroncis Qwiic ecosystem
 #
@@ -38,7 +38,6 @@ import sys
 import time
 
 def runExample():
-	# TODO Replace template and title
 	print("\nQwiic MMC5983MA Example 1 - Basic Readings\n")
 
 	# Create instance of device
@@ -69,8 +68,8 @@ def runExample():
 		# Extra space to keep numbers separate
 		print()
 
-		# Delay for a second
-		time.sleep(1)
+		# Delay for a moment
+		time.sleep(0.1)
 
 if __name__ == '__main__':
 	try:
