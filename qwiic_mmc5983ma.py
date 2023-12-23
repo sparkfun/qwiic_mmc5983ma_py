@@ -146,7 +146,10 @@ class QwiicMMC5983MA(object):
         """
 
         # Use address if provided, otherwise pick the default
-        self.address = self.available_addresses[0] if address is None else address
+        if address in self.available_addresses:
+            self.address = address
+        else:
+            self.address = self.available_addresses[0]
 
         # Load the I2C driver if one isn't provided
         if i2c_driver is None:
@@ -176,7 +179,7 @@ class QwiicMMC5983MA(object):
         :rtype: bool
         """
         # Check if connected by seeing if an ACK is received
-        if qwiic_i2c.isDeviceConnected(self.address) == False:
+        if self._i2c.isDeviceConnected(self.address) == False:
             return False
         
         # Something ACK'd, check the product ID
