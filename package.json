@@ -1,9 +1,8 @@
 {
     "urls": [
-      ["qwiic_mmc5983ma.py", "github:sparkfun/Qwiic_MMC5983MA_Py/qwiic_mmc5983ma.py"]
-    ],
-    "deps": [
-      ["github:sparkfun/Qwiic_I2C_Py", "master"]
+      ["qwiic_mmc5983ma_py_examples/qwiic_mmc5983ma_ex1_basic_readings.py", "github:sparkfun/qwiic_mmc5983ma_py/examples/qwiic_mmc5983ma_ex1_basic_readings.py"],
+      ["qwiic_mmc5983ma_py_examples/qwiic_mmc5983ma_ex2_calibration.py", "github:sparkfun/qwiic_mmc5983ma_py/examples/qwiic_mmc5983ma_ex2_calibration.py"],
+      ["qwiic_mmc5983ma_py_examples/qwiic_mmc5983ma_ex3_compass.py", "github:sparkfun/qwiic_mmc5983ma_py/examples/qwiic_mmc5983ma_ex3_compass.py"]
     ],
     "version": "0.9.1"
 }
