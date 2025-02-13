@@ -6,10 +6,19 @@ NOTE: Any numbering of examples is to retain consistency with the Arduino librar
 ## Qwiic Mmc5983Ma Ex1 Basic Readings
 Demonstrates how to get basic data from the MMC5983MA Magnetometer
 
+The key functions showcased by this example are:
+- [get_measurement_xyz_gauss()]()
+
 ## Qwiic Mmc5983Ma Ex2 Calibration
 Demonstrates how to calibrate the MMC5983MA Magnetometer
+- [calibrate_offsets()]()
+- [get_offsets()]()
+
 
 ## Qwiic Mmc5983Ma Ex3 Compass
 Demonstrates how to use the MMC5983MA Magnetometer as a compass
+- [get_measurement_x_gauss()]()
+- [get_measurement_y_gauss()]()
+
 
 
