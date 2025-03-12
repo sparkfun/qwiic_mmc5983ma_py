@@ -1,4 +1,4 @@
-Qwiic <Example Package Title>
+Qwiic MMC5983MA Python Package
 =============================================
 
-This is a short description of this package.
+This is the Python package for the SparkFun Qwiic MMC5983MA.
